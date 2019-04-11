@@ -64,9 +64,24 @@ void write_curr_frame_to_disk(Mat &rgb, Mat & depth, int counter ) {
 
 int main() {
   /*initialize camera*/
-  Camera cam;
+  /*for (int i = 0; i < 6; ++i)
+  {
+    //DEFINE CAMERAS IN HERE! not sure how to open gstreamers
+  }*/
+  //Camera cam; 
+  //USE GSTRING HERE TWO DEFINE ANOTHER CAMERA... name them cam1, cam2, cam3, etc
+  VideoCapture cam1("udpsrc port=5005 caps=\"application/x-rtp,encoding-name=H264,payload=96\" ! rtph264depay ! h264parse ! decodebin ! autovideosink");
+  VideoCapture cam2("udpsrc port=5600 caps=\"application/x-rtp,encoding-name=H264,payload=96\" ! rtph264depay ! h264parse ! decodebin ! autovideosink");
+
+  if (!cam1.isOpened()) { //check if video device has been initialised
+        cout << "cannot open cam1 :(";
+  }
+  if (!cam2.isOpened()) { //check if video device has been initialised
+        cout << "cannot open cam2 :((";
+  }
+
   int j = 0;
-  double frame_time = 0;
+  /*double frame_time = 0;
   int counter_fail = 0;
   #if PERCEPTION_DEBUG
     namedWindow("image", 1);
@@ -74,7 +89,7 @@ int main() {
   #endif
   disk_record_init();
 
-  /*initialize lcm messages*/
+  initialize lcm messages*/
   lcm::LCM lcm_;
   rover_msgs::TennisBall tennisMessage;
   rover_msgs::Obstacle obstacleMessage;
@@ -84,6 +99,7 @@ int main() {
   int tennisBuffer = 0;
   
   while (true) {
+    /*
     if (!cam_grab_succeed(cam, counter_fail)) break;
 
     auto start = chrono::high_resolution_clock::now();
@@ -101,62 +117,65 @@ int main() {
 
 
 
-    /* Tennis ball detection*/
-    tennisMessage.found = false;
-    #if TB_DETECTION
-      vector<Point2f> centers = findTennisBall(src, depth_img);
-      if(centers.size() != 0){
-        float dist = depth_img.at<float>(centers[0].y, centers[0].x);
-        if (dist < BALL_DETECTION_MAX_DIST) {
-          tennisMessage.distance = dist;
-          tennisMessage.bearing = getAngle((int)centers[0].x, src.cols);
+    // Tennis ball detection
+    
+    vector<Point2f> centers = findTennisBall(src, depth_img);
+    if(centers.size() != 0) {
+      float dist = depth_img.at<float>(centers[0].y, centers[0].x);
+      if (dist < BALL_DETECTION_MAX_DIST) {
+        tennisMessage.distance = dist;
+        tennisMessage.bearing = getAngle((int)centers[0].x, src.cols);
 
-          tennisMessage.found = true;
-          tennisBuffer = 0;
+        tennisMessage.found = true;
+        tennisBuffer = 0;
 
-          #if PERCEPTION_DEBUG
-          // cout << centers.size() << " tennis ball(s) detected: " << tennisMessage.distance << "m, " << tennisMessage.bearing << "degrees\n";
-          #endif
+        #if PERCEPTION_DEBUG
+        // cout << centers.size() << " tennis ball(s) detected: " << tennisMessage.distance << "m, " << tennisMessage.bearing << "degrees\n";
+        #endif
 
-        }else if(tennisBuffer < 5){   //give 5 frames to recover if tennisball lost due to noise
-          tennisBuffer++;
-          tennisMessage.found = true;
-        }
-      }
-    #endif
+      } else if(tennisBuffer < 5){   //give 5 frames to recover if tennisball lost due to noise
+        tennisBuffer++;
+      } else
+        tennisMessage.found = false;
+    }
 
     
-    /*initialize obstacle detection*/
-    obstacleMessage.detected = false;
-    #if OBSTACLE_DETECTION
-      float pixelWidth = src.cols;
-      //float pixelHeight = src.rows;
-      int roverPixWidth = calcRoverPix(distThreshold, pixelWidth);
 
-      /* obstacle detection */
-      obstacle_return obstacle_detection =  avoid_obstacle_sliding_window(depth_img, src,  num_sliding_windows , roverPixWidth);
-      if(obstacle_detection.bearing > 0.05 || obstacle_detection.bearing < -0.05) {
-        // cout<< "bearing not zero!\n";
-        obstacleMessage.detected = true;    //if an obstacle is detected in front
-      }
-      obstacleMessage.bearing = obstacle_detection.bearing;
+    //initialize obstacle detection
+    float pixelWidth = src.cols;
+    //float pixelHeight = src.rows;
+    int roverPixWidth = calcRoverPix(distThreshold, pixelWidth);
 
-      #if PERCEPTION_DEBUG
-      // cout << "Turn " << obstacleMessage.bearing << ", detected " << (bool)obstacleMessage.detected<< endl;
-      #endif
+    //obstacle detection 
+    obstacle_return obstacle_detection =  avoid_obstacle_sliding_window(depth_img, src,  num_sliding_windows , roverPixWidth);
+    if(obstacle_detection.bearing > 0.05 || obstacle_detection.bearing < -0.05) {
+      // cout<< "bearing not zero!\n";
+      obstacleMessage.detected = true;    //if an obstacle is detected in front
+    } else {
+      // cout<<"bearing zero\n";
+      obstacleMessage.detected = false;
+    }
+    obstacleMessage.bearing = obstacle_detection.bearing;
 
+    #if PERCEPTION_DEBUG
+    // cout << "Turn " << obstacleMessage.bearing << ", detected " << (bool)obstacleMessage.detected<< endl;
     #endif
-  
+    */
+    Mat cam1frame, cam2frame;
+    cam1.read(cam1frame);
+    cam2.read(cam2frame);
 
     lcm_.publish("/tennis_ball", &tennisMessage);
     lcm_.publish("/obstacle", &obstacleMessage);
 
     #if PERCEPTION_DEBUG
-      imshow("depth", depth_img);
-      imshow("image", src);
+      //imshow("depth", depth_img);
+      //imshow("image", src);
+      imshow("cam 1", cam1frame);
+      imshow("cam 2", cam2frame);
       waitKey(FRAME_WAITKEY);
     #endif
-
+    /*
     auto end = chrono::high_resolution_clock::now();
 
     auto delta = chrono::duration_cast<chrono::duration<double>>(end - start);
@@ -166,8 +185,12 @@ int main() {
             // cout << "framerate: " << 1.0f/(frame_time/j) << endl;
         }
     #endif
+    */
     j++;
-  }
 
+    //displaying the videocapture streams
+
+  } //added for loop
   return 0;
 }
+
