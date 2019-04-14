@@ -69,15 +69,17 @@ int main() {
     //DEFINE CAMERAS IN HERE! not sure how to open gstreamers
   }*/
   //Camera cam; 
+
   //USE GSTRING HERE TWO DEFINE ANOTHER CAMERA... name them cam1, cam2, cam3, etc
   VideoCapture cam1("udpsrc port=5005 caps=\"application/x-rtp,encoding-name=H264,payload=96\" ! rtph264depay ! h264parse ! decodebin ! autovideosink");
   VideoCapture cam2("udpsrc port=5600 caps=\"application/x-rtp,encoding-name=H264,payload=96\" ! rtph264depay ! h264parse ! decodebin ! autovideosink");
 
   if (!cam1.isOpened()) { //check if video device has been initialised
-        cout << "cannot open cam1 :(";
+        cout << "cannot open cam1" << endl;
   }
   if (!cam2.isOpened()) { //check if video device has been initialised
-        cout << "cannot open cam2 :((";
+        cout << "cannot open cam2" << endl;
+        return 1;
   }
 
   int j = 0;
@@ -168,11 +170,44 @@ int main() {
     lcm_.publish("/tennis_ball", &tennisMessage);
     lcm_.publish("/obstacle", &obstacleMessage);
 
+    vector<Point2f> centers2 = findTennisBallCaleb(cam1frame);
+
+        //CONCATENATION STUFF
+        Mat padded;
+        Mat padded2;
+        int rowPadding1 = 0;
+        int colPadding1 = 0;
+        int rowPadding2 = 0;
+        int colPadding2 = 0;
+        if (cam1frame.rows > cam2frame.rows)
+        {
+            rowPadding2 = cam1frame.rows - cam2frame.rows;
+        }
+        else
+        {
+            rowPadding1 = cam2frame.rows - cam1frame.rows;
+            //cout << "here" << endl;
+        }
+        if (cam1frame.cols > cam2frame.cols)
+        {
+            colPadding2 = cam1frame.cols - cam2frame.cols;
+            //cout << "here 2" << endl;
+        }
+        else
+        {
+            colPadding1 = cam2frame.cols - cam1frame.cols;
+        }
+        copyMakeBorder(cam2frame, padded2, 0, rowPadding2, 0, colPadding2, BORDER_CONSTANT, Scalar::all(0));
+        copyMakeBorder(cam1frame, padded, 0, rowPadding1, 0, colPadding1, BORDER_CONSTANT, Scalar::all(0));
+
+    Mat combinedImage;
+    hconcat(cam1frame, cam2frame, combinedImage);
     #if PERCEPTION_DEBUG
       //imshow("depth", depth_img);
       //imshow("image", src);
       imshow("cam 1", cam1frame);
       imshow("cam 2", cam2frame);
+      imshow("combined", combinedImage);
       waitKey(FRAME_WAITKEY);
     #endif
     /*
@@ -193,4 +228,3 @@ int main() {
   } //added for loop
   return 0;
 }
-

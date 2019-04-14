@@ -55,4 +55,5 @@ struct obstacle_return {
 
 //functions
 std::vector<cv::Point2f> findTennisBall(cv::Mat &src, cv::Mat &depth_src);
-obstacle_return avoid_obstacle_sliding_window(cv::Mat &depth_img, cv::Mat &rgb_img, int num_windows, int rover_width);
+std::vector<cv::Point2f> findTennisBallCaleb(cv::Mat &src);
+obstacle_return avoid_obstacle_sliding_window(cv::Mat &depth_img, cv::Mat &rgb_img, int num_windows, int rover_width );
