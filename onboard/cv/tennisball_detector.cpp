@@ -99,22 +99,18 @@ vector<Point2f> findTennisBall(Mat &src, Mat & depth_src){
 
 vector<Point2f> findTennisBallCaleb(Mat &src){
   
-    #ifndef PERCEPTION_DEBUG
     Mat hsv;
-    #endif
 
     cvtColor(src, hsv, COLOR_BGR2HSV);
 
     Mat mask = greenFilter(hsv);
 
-    #ifdef PERCEPTION_DEBUG
-    mouse_data * m_d = & m_data;
-    m_d->hsv = &hsv;
-    //imshow("hsv", hsv);
-    setMouseCallback("image", onMouse, (void *)m_d);    
-    //imshow("mask", mask);
+    #if PERCEPTION_DEBUG
+    HSV = hsv;
+    setMouseCallback("image", onMouse);    
+    imshow("mask", mask);
     #endif
-
+    
     // smoothing
     //medianBlur(mask, mask, 11);
     Size ksize(5,5);
@@ -135,16 +131,32 @@ vector<Point2f> findTennisBallCaleb(Mat &src){
         minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
     }
 
-    
-    #ifdef PERCEPTION_DEBUG
-    /// Draw polygonal contour + bonding rects + circles
-    //Mat drawing = Mat::zeros( mask.size(), CV_8UC3);
+    #if PERCEPTION_DEBUG
+    // Draw polygonal contour + bonding rects + circles
+    Mat drawing = Mat::zeros( mask.size(), CV_8UC3);
     for( unsigned i = 0; i< contours.size(); i++ ){
         Scalar color = Scalar(0, 0, 255);
         drawContours( src, contours_poly, i, color, 1, 8, vector<Vec4i>(), 0, Point() );
-        circle( src, center[i], (int)radius[i], color, 2, 8, 0 );
+        //circle( src, center[i], (int)radius[i], color, 2, 8, 0 );
     }
     #endif
+    
+    if(center.size() > 0){
+        vector<Point2f>biggestCircle( 1 );
+        double biggestRadius =0;
+        unsigned index= 0;
+        
+        for(unsigned i = 0; i< center.size(); i++ ){
+            if(radius[i] > biggestRadius){
+                biggestRadius = radius[i];
+                biggestCircle[0] =center[i];
+                index = i;
+            }
+        }
+                Scalar color = Scalar(0, 0, 255);
 
+        circle( src, center[index], (int)radius[index], color, 2, 8, 0 );
+        return biggestCircle;
+    }
     return center;
 }
